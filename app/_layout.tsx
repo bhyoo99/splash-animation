@@ -1,7 +1,4 @@
-import FontAwesome from "@expo/vector-icons/FontAwesome";
 import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
-import { useAssets } from "expo-asset";
-import { useFonts } from "expo-font";
 import { SplashScreen, Stack } from "expo-router";
 import { useEffect } from "react";
 import { useColorScheme, StyleSheet } from "react-native";
@@ -17,6 +14,7 @@ import Animated, {
 } from "react-native-reanimated";
 
 import { View } from "../components/Themed";
+import useCachedResources from "../hooks/useCachedResources";
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -30,6 +28,32 @@ export const unstable_settings = {
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
+
+export default function RootLayout() {
+  const isLoadingComplete = useCachedResources();
+
+  if (!isLoadingComplete) {
+    return null;
+  }
+  return (
+    <AnimatedSplashScreen>
+      <RootLayoutNav />
+    </AnimatedSplashScreen>
+  );
+}
+
+function RootLayoutNav() {
+  const colorScheme = useColorScheme();
+
+  return (
+    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+      <Stack>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="modal" options={{ presentation: "modal" }} />
+      </Stack>
+    </ThemeProvider>
+  );
+}
 
 function AnimatedSplashScreen({ children }: { children: React.ReactNode }) {
   const colorSharedValue = useSharedValue(0);
@@ -97,51 +121,5 @@ function AnimatedSplashScreen({ children }: { children: React.ReactNode }) {
         />
       </Animated.View>
     </View>
-  );
-}
-
-function App() {
-  return (
-    <AnimatedSplashScreen>
-      <RootLayoutNav />
-    </AnimatedSplashScreen>
-  );
-}
-
-export default function RootLayout() {
-  const [fontLoaded, fontError] = useFonts({
-    SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
-    ...FontAwesome.font,
-  });
-  const [assetLoaded, assetError] = useAssets([require("../assets/images/splash.png")]);
-
-  // Expo Router uses Error Boundaries to catch errors in the navigation tree.
-  useEffect(() => {
-    if (fontError || assetError) throw fontError || assetError;
-  }, [fontError, assetError]);
-
-  useEffect(() => {
-    if (fontLoaded && assetLoaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [fontLoaded, assetLoaded]);
-
-  if (!fontLoaded || !assetLoaded) {
-    return null;
-  }
-
-  return <App />;
-}
-
-function RootLayoutNav() {
-  const colorScheme = useColorScheme();
-
-  return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: "modal" }} />
-      </Stack>
-    </ThemeProvider>
   );
 }
